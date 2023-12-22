@@ -25,12 +25,10 @@ function App() {
   };
 
   const handleJoinChannel = () => {
-    appendMessage("Joining channel: " + channelName);
-    
     if (channel.current) {
       channel.current.leave();
     }
-
+  
     const payloadArray = payloadInput.split(',').map(item => item.trim());
     channel.current = socket.current.channel(channelName, { ids: payloadArray });
     channel.current.join()
@@ -38,13 +36,21 @@ function App() {
         appendMessage("Joined successfully: " + JSON.stringify(resp));
       })
       .receive("error", resp => {
-        appendMessage("Unable to join: " + JSON.stringify(resp));
+        const reason = resp.reason || "Unknown error";
+        appendMessage(`Unable to join: ${reason}`);
+  
+        // 检查特定的错误原因并离开频道
+        if (reason === "unmatched topic") {
+          if (channel.current) {
+            channel.current.leave();
+          }
+        }
       });
-
+  
     channel.current.on("new_message", (resp) => {
       appendMessage("Received message: " + JSON.stringify(resp));
     });
-  };
+  };  
 
   const handleSendMessage = () => {
     if (channel.current) {
